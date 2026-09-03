@@ -27,7 +27,7 @@ final class ScreenTimeLabModel: ObservableObject {
     @Published private(set) var nextScheduleEnd: Date?
     @Published var errorMessage: String?
 
-    private let authorizationCenter = AuthorizationCenter.shared
+    nonisolated(unsafe) private let authorizationCenter = AuthorizationCenter.shared
     private let activityCenter = DeviceActivityCenter()
     private let settingsStore = ManagedSettingsStore(
         named: ManagedSettingsStore.Name(ScreenTimeLabConstants.activityName))
