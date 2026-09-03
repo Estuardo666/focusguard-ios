@@ -15,6 +15,7 @@ The architecture, Windows audit, Apple limitations, Codemagic/Sideloadly workflo
 - `Tests` — Swift Testing coverage for the platform-neutral slice.
 - `project.yml` — XcodeGen definition for the app and three Screen Time extension targets.
 - `codemagic.yaml` — package test workflow plus gated signed and unsigned IPA laboratory workflows; the runner generates the Xcode project before building.
+- `.github/workflows/ci.yml` — GitHub Actions CI for the platform-neutral Swift tests and static metadata/source checks. It deliberately does not pretend to replace Codemagic/Xcode signing.
 - `scripts/codemagic-preflight.ps1` — static gate for required files, bundle IDs, workflows, XML/entitlements and obvious secret patterns before pushing to Codemagic.
 
 ## Codemagic → Sideloadly laboratory path
@@ -29,6 +30,11 @@ The signed workflow also exports the effective entitlements for the app and each
 For the signed run, configure Codemagic with `CM_DEVELOPMENT_TEAM`, development profiles for `com.focusguard.apple` and all three extension bundle IDs, the registered iPhone/iPad UDID, the approved Family Controls capability and the App Group. The unsigned run needs no signing assets, but Sideloadly must re-sign the IPA before installation and may invalidate those capabilities.
 
 The package tests can run on any macOS runner with the selected Swift toolchain. Xcode project builds, entitlement checks and iPhone behavior cannot be validated from the current Windows workspace.
+
+GitHub Actions provides a fast, signing-free regression gate. Codemagic remains
+the authoritative CI for XcodeGen, Xcode archive/export, code signing,
+entitlement inspection and the development IPA used by the physical Screen
+Time experiment.
 
 Before the first Codemagic run, push this workspace to the configured Apple repository. The audited GitHub repository was empty, so Codemagic cannot build from it until these files (especially `codemagic.yaml`, `project.yml` and `ScreenTimeLab/`) are present.
 

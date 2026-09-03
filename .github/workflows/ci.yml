@@ -1,0 +1,58 @@
+name: FocusGuard Apple CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  package-and-static-checks:
+    name: Swift package and static checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Run Codemagic preflight locally
+        shell: pwsh
+        run: ./scripts/codemagic-preflight.ps1
+
+      - name: Parse YAML and XML metadata
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import xml.etree.ElementTree as ET
+          import yaml
+
+          for name in ("codemagic.yaml", "project.yml"):
+              with Path(name).open(encoding="utf-8") as handle:
+                  yaml.safe_load(handle)
+          for path in Path("ScreenTimeLab").glob("*.plist"):
+              ET.parse(path)
+          for path in Path("ScreenTimeLab").glob("*.entitlements"):
+              ET.parse(path)
+          print("YAML and XML metadata parsed successfully")
+          PY
+
+      - name: Run platform-neutral Swift tests
+        shell: bash
+        run: |
+          docker run --rm \
+            -v "$GITHUB_WORKSPACE:/workspace" \
+            -w /workspace \
+            swift:6.2-jammy \
+            swift test --enable-code-coverage
+
+      - name: Parse Apple target sources
+        shell: bash
+        run: |
+          docker run --rm \
+            -v "$GITHUB_WORKSPACE:/workspace" \
+            -w /workspace \
+            swift:6.2-jammy \
+            bash -lc "find ScreenTimeLab -name '*.swift' -print0 | xargs -0 -n1 swiftc -parse"

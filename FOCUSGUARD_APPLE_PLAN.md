@@ -7,9 +7,9 @@
 - Workspace backend: `C:\Users\Stuart\Documents\FocusGuard\FocusGuard Backend`.
 - Repositorio Windows existente: `C:\Users\Stuart\Documents\FocusGuard\FocusGuard-Autopilot`.
 - repositorio focusguard ios: https://github.com/Estuardo666/focusguard-ios
-- auditoría del repositorio remoto (2026-09-03): `Estuardo666/focusguard-ios` existe pero está vacío; no contiene proyecto Xcode, SwiftUI ni workflows que integrar.
+- auditoría del repositorio remoto (2026-09-03): `Estuardo666/focusguard-ios` ya contiene la rama `main` y el commit inicial del laboratorio; antes de este push estaba vacío.
 - Fecha de auditoría: 2026-09-03.
-- Última verificación local del slice: 2026-09-03 08:47 -05:00 (Swift 38, backend 22, OpenAPI parseado, Windows 360, preflight Codemagic, YAML/plists/entitlements y scan de secretos verde; `BackendSyncChangeValidator` y `ScreenTimeSyncEngine` parseados).
+- Última verificación local del slice: 2026-09-03 15:27 -05:00 (Swift 38, backend 22, OpenAPI parseado, Windows 360, preflight Codemagic, YAML/plists/entitlements y scan de secretos verde; `BackendSyncChangeValidator` y `ScreenTimeSyncEngine` parseados).
 - Objetivo de compatibilidad inicial Apple: iOS/iPadOS/macOS 26, usando el SDK estable disponible al iniciar el trabajo.
 - Distribución Mac prioritaria: Mac App Store.
 - MVP Apple: sin cuenta y totalmente offline.
@@ -51,6 +51,9 @@ Se ha ejecutado el primer vertical slice fuera de macOS:
 - `scripts/codemagic-preflight.ps1` ejecuta antes del push un gate local sin efectos externos: comprueba archivos/targets, workflows, XML, Family Controls + App Group en cada entitlement, protecciones de `.gitignore` y patrones obvios de secretos. En la última ejecución pasó y dejó explícito que el gate físico sigue siendo Codemagic + iPhone/iPad.
 - Las imágenes Xcode del YAML están entrecomilladas (`"26.6"`) para evitar que el parser las trate como números y alterar la selección del runner.
 - `.gitignore` del workspace Apple excluye IPA/archives, certificados, provisioning profiles, `.env` y `Secrets*.xcconfig` antes de poblar el remoto.
+- El remoto Apple se publicó en `main` con commit `02f25cce8bcf307a1c41ba410289d6e40bcffcc2`; el árbol contiene 30 archivos y no incluye `.build` ni artefactos de firma.
+- `.github/workflows/ci.yml` añade un gate de GitHub Actions sin firma: ejecuta el preflight, parsea YAML/XML, corre `swift test` en `swift:6.2-jammy` y hace `swiftc -parse` del laboratorio. El build firmado iOS no se duplica allí: Codemagic sigue siendo la CI autorizada para Xcode, provisioning, archive/export y entitlements.
+- GitHub Actions aún no tiene ejecuciones porque el workflow se añadió después del commit inicial; tras publicar este cambio se debe observar el primer run en la pestaña Actions. No se puede afirmar un build Codemagic hasta conectar el repositorio y sus environment groups.
 - Una inspección de patrones de secretos en fuentes candidatas fuera de `.build/bin/obj` no encontró API keys, private keys, client secrets, passwords ni bearer tokens; debe repetirse antes de cada push.
 - El `.gitignore` backend también excluye `appsettings.*.local.json`, `.env` y certificados/keys (`*.pfx`, `*.p12`, `*.pem`, `*.key`); `appsettings.example.json` conserva solo placeholders.
 - La restauración solo considera registros `Active`/`Activating`; un registro detenido no puede resucitarse al relanzar la app. Esta invariación requiere una prueba de UI/SwiftData en el runner macOS.
@@ -110,7 +113,7 @@ Antes del `git add`, revisar que no existan certificados, perfiles, tokens ni ar
 ### Archivos ejecutados en este vertical slice
 
 - Apple: `Package.swift`, `Sources/FocusGuardDomain/FocusGuardDomain.swift`, `Sources/FocusGuardSync/FocusGuardSync.swift`, sus tests, `ScreenTimeLab/` (incluido `ScreenTimeSyncStore.swift`) y `scripts/codemagic-preflight.ps1`.
-- Apple build: `project.yml`, `codemagic.yaml`, entitlements y `Info-*.plist`.
+- Apple build/CI: `project.yml`, `codemagic.yaml`, `.github/workflows/ci.yml`, entitlements y `Info-*.plist`.
 - Backend: `src/FocusGuard.Backend.Contracts`, `Domain` (incluidos `RefreshTokenService` y `SyncAggregateValidator`), `Persistence` (incluido `PostgresRefreshTokenStore`), `Api`, `Client`, `database/schema.sql`, `database/migrations/0001_sync_idempotency_fingerprint.sql`, `database/migrations/0002_refresh_token_rotation.sql` y `openapi.yaml`.
 - Backend tests: `tests/FocusGuard.Backend.Tests`.
 - Desarrollo backend: `docker-compose.yml` levanta PostgreSQL 16 local y aplica `database/schema.sql` al crear el volumen por primera vez; no es configuración de producción.
