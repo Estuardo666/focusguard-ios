@@ -36,7 +36,8 @@ final class ScreenTimeSyncStore {
 
         return try records.prefix(limit).map { record in
             guard let aggregateID = record.aggregateID,
-                  let expectedRevision = record.expectedRevision else {
+                  let storedExpectedRevision = record.expectedRevision,
+                  let expectedRevision = Int(exactly: storedExpectedRevision) else {
                 throw StoreError.invalidPendingMutation(record.idempotencyKey)
             }
 
@@ -63,12 +64,16 @@ final class ScreenTimeSyncStore {
             return
         }
 
+        guard let storedExpectedRevision = Int64(exactly: mutation.expectedRevision) else {
+            throw StoreError.invalidPendingMutation(mutation.idempotencyKey)
+        }
+
         modelContext.insert(LocalPendingMutationRecord(
             idempotencyKey: mutation.idempotencyKey,
             aggregateType: mutation.aggregateType,
             aggregateID: mutation.aggregateID,
             operation: mutation.operation,
-            expectedRevision: mutation.expectedRevision,
+            expectedRevision: storedExpectedRevision,
             payloadJSON: mutation.payloadJSON,
             createdAt: mutation.clientCreatedAt))
         try modelContext.save()
