@@ -1,4 +1,5 @@
 import FamilyControls
+import FocusGuardDomain
 import Foundation
 import SwiftData
 import SwiftUI

@@ -321,7 +321,7 @@ final class ScreenTimeLabModel: ObservableObject {
            let record = (try? modelContext.fetch(FetchDescriptor<LocalSessionRecord>()))?.first(where: { $0.id == sessionID }) {
             record.stateRaw = force ? "Expired" : "Stopped"
             record.updatedAt = .now
-            try? modelContext?.save()
+            try? modelContext.save()
         }
         defaults?.removeObject(forKey: ScreenTimeLabConstants.sessionIDKey)
         defaults?.removeObject(forKey: ScreenTimeLabConstants.sessionStartKey)
