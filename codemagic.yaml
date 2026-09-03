@@ -29,7 +29,10 @@ workflows:
         script: swift test
       - name: Generate Xcode project
         script: |
-          command -v xcodegen >/dev/null 2>&1 || brew install xcodegen
+          set -euo pipefail
+          if ! command -v xcodegen >/dev/null 2>&1; then
+            HOMEBREW_NO_AUTO_UPDATE=1 HOMEBREW_NO_INSTALL_CLEANUP=1 brew install xcodegen
+          fi
           xcodegen generate --spec project.yml
       - name: Resolve Xcode project dependencies
         script: xcodebuild -resolvePackageDependencies -project "$XCODE_WORKSPACE"
@@ -95,9 +98,12 @@ workflows:
     scripts:
       - name: Verify Xcode project exists
         script: |
-          command -v xcodegen >/dev/null 2>&1 || brew install xcodegen
+          set -euo pipefail
+          if ! command -v xcodegen >/dev/null 2>&1; then
+            HOMEBREW_NO_AUTO_UPDATE=1 HOMEBREW_NO_INSTALL_CLEANUP=1 brew install xcodegen
+          fi
           xcodegen generate --spec project.yml
-          test -f FocusGuardApple.xcodeproj
+          test -d FocusGuardApple.xcodeproj
       - name: Resolve dependencies
         script: xcodebuild -resolvePackageDependencies -project FocusGuardApple.xcodeproj
       - name: Archive without code signing

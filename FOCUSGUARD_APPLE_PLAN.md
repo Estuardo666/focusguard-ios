@@ -10,6 +10,7 @@
 - auditoría del repositorio remoto (2026-09-03): `Estuardo666/focusguard-ios` ya contiene la rama `main` y el commit inicial del laboratorio; antes de este push estaba vacío.
 - Fecha de auditoría: 2026-09-03.
 - Última verificación local del slice: 2026-09-03 15:35 -05:00 (Swift 38, backend 22, OpenAPI parseado, Windows 360, preflight Codemagic, YAML/plists/entitlements y scan de secretos verde; `BackendSyncChangeValidator` y `ScreenTimeSyncEngine` parseados).
+- Incidente Codemagic analizado: el build `6a99db72c6da4caa66735395` (workflow `sideload-lab`, commit `c96d56c`, 2026-09-03 15:41 -05:00) generó correctamente `/Users/builder/clone/FocusGuardApple.xcodeproj` y después terminó con código 1 porque el script ejecutaba `test -f FocusGuardApple.xcodeproj`; un `.xcodeproj` es un directorio y debe comprobarse con `test -d`. La corrección también añade `set -euo pipefail` y desactiva la auto-actualización/limpieza de Homebrew durante la instalación condicional de XcodeGen. Debe repetirse el workflow para cerrar el gate macOS.
 - Objetivo de compatibilidad inicial Apple: iOS/iPadOS/macOS 26, usando el SDK estable disponible al iniciar el trabajo.
 - Distribución Mac prioritaria: Mac App Store.
 - MVP Apple: sin cuenta y totalmente offline.
@@ -57,6 +58,7 @@ Se ha ejecutado el primer vertical slice fuera de macOS:
 - La ejecución `33802802116` (commit `9c278e1`, actualización del plan) también pasó en 1m07s con los mismos cuatro gates; el estado remoto de `main` queda verde.
 - La ejecución `33802974087` (commit `804eb08`, registro de la verificación anterior) pasó en 1m08s; el estado remoto seguía verde después de actualizar el plan.
 - El CI de GitHub no puede validar Family Controls, macros SwiftData enlazadas al SDK iOS, XcodeGen/Xcode archive ni firma. Codemagic debe conectarse al repositorio y sus environment groups para ejecutar `ios-screentime-lab`; ese build no se ha ejecutado todavía.
+- El CI de GitHub Actions permanece verde para validaciones portables (preflight, YAML/XML, 38 pruebas Swift y parseo Swift), mientras que Codemagic es el gate de macOS/Xcode. El primer run real de `sideload-lab` no llegó a `xcodebuild`: falló en la aserción de tipo de ruta después de XcodeGen, no en Swift, dependencias ni el proyecto generado. Por ello el siguiente intento debe volver a ejecutar primero `sideload-lab` y solo después `ios-screentime-lab` con firma autorizada.
 - Una inspección de patrones de secretos en fuentes candidatas fuera de `.build/bin/obj` no encontró API keys, private keys, client secrets, passwords ni bearer tokens; debe repetirse antes de cada push.
 - El `.gitignore` backend también excluye `appsettings.*.local.json`, `.env` y certificados/keys (`*.pfx`, `*.p12`, `*.pem`, `*.key`); `appsettings.example.json` conserva solo placeholders.
 - La restauración solo considera registros `Active`/`Activating`; un registro detenido no puede resucitarse al relanzar la app. Esta invariación requiere una prueba de UI/SwiftData en el runner macOS.
