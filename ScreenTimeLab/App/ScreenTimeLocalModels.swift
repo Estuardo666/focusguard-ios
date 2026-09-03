@@ -184,11 +184,21 @@ enum FocusGuardModelContainerFactory {
     /// re-signed without that entitlement, so fall back to the app's own container
     /// instead of failing to launch.
     static func make() throws -> ModelContainer {
+        // SwiftData traps (rather than throwing) when the app group is not
+        // provisioned, so probe for it before asking for that container.
+        let groupContainer: ModelConfiguration.GroupContainer = isAppGroupAvailable
+            ? .identifier(ScreenTimeLabConstants.appGroup)
+            : .none
         do {
-            return try makeContainer(groupContainer: .identifier(ScreenTimeLabConstants.appGroup))
+            return try makeContainer(groupContainer: groupContainer)
         } catch {
-            return try makeContainer(groupContainer: .none)
+            return try makeInMemory()
         }
+    }
+
+    static var isAppGroupAvailable: Bool {
+        FileManager.default.containerURL(
+            forSecurityApplicationGroupIdentifier: ScreenTimeLabConstants.appGroup) != nil
     }
 
     static func makeInMemory() throws -> ModelContainer {
