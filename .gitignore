@@ -1,0 +1,15 @@
+.build/
+DerivedData/
+build/
+*.xcuserstate
+xcuserdata/
+*.ipa
+*.xcarchive
+*.dSYM.zip
+*.p12
+*.mobileprovision
+*.provisionprofile
+*.cer
+.env
+.env.*
+Secrets*.xcconfig

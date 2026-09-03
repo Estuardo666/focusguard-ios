@@ -1,0 +1,91 @@
+name: FocusGuardApple
+
+options:
+  bundleIdPrefix: com.focusguard
+  deploymentTarget:
+    iOS: "26.0"
+  createIntermediateGroups: true
+  groupSortPosition: top
+
+packages:
+  FocusGuardApple:
+    path: .
+
+settings:
+  base:
+    SWIFT_VERSION: "6.2"
+    MARKETING_VERSION: "0.1.0"
+    CURRENT_PROJECT_VERSION: "1"
+    DEVELOPMENT_TEAM: "$(CM_DEVELOPMENT_TEAM)"
+
+targets:
+  FocusGuardMobile:
+    type: application
+    platform: iOS
+    sources:
+      - path: ScreenTimeLab/App
+      - path: ScreenTimeLab/Shared
+    dependencies:
+      - package: FocusGuardApple
+        product: FocusGuardDomain
+      - package: FocusGuardApple
+        product: FocusGuardSync
+      - target: FocusGuardDeviceActivityMonitor
+      - target: FocusGuardShieldConfiguration
+      - target: FocusGuardShieldAction
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.focusguard.apple
+        INFOPLIST_FILE: ScreenTimeLab/Info-App.plist
+        CODE_SIGN_ENTITLEMENTS: ScreenTimeLab/FocusGuardMobile.entitlements
+        TARGETED_DEVICE_FAMILY: "1,2"
+        SUPPORTS_MACCATALYST: NO
+    scheme:
+      testTargets: []
+
+  FocusGuardDeviceActivityMonitor:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: ScreenTimeLab/Extensions/DeviceActivityMonitor
+      - path: ScreenTimeLab/Shared
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.focusguard.apple.deviceactivity-monitor
+        INFOPLIST_FILE: ScreenTimeLab/Info-DeviceActivityMonitor.plist
+        CODE_SIGN_ENTITLEMENTS: ScreenTimeLab/FocusGuardDeviceActivityMonitor.entitlements
+        SKIP_INSTALL: YES
+
+  FocusGuardShieldConfiguration:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: ScreenTimeLab/Extensions/ShieldConfiguration
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.focusguard.apple.shield-configuration
+        INFOPLIST_FILE: ScreenTimeLab/Info-ShieldConfiguration.plist
+        CODE_SIGN_ENTITLEMENTS: ScreenTimeLab/FocusGuardShieldConfiguration.entitlements
+        SKIP_INSTALL: YES
+
+  FocusGuardShieldAction:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: ScreenTimeLab/Extensions/ShieldAction
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.focusguard.apple.shield-action
+        INFOPLIST_FILE: ScreenTimeLab/Info-ShieldAction.plist
+        CODE_SIGN_ENTITLEMENTS: ScreenTimeLab/FocusGuardShieldAction.entitlements
+        SKIP_INSTALL: YES
+
+schemes:
+  FocusGuardMobile:
+    build:
+      targets:
+        FocusGuardMobile: all
+    run:
+      config: Debug
+    archive:
+      config: Debug

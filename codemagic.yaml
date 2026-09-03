@@ -1,0 +1,134 @@
+workflows:
+  package-only:
+    name: FocusGuard Swift package checks
+    environment:
+      xcode: "26.6"
+    scripts:
+      - name: Resolve Swift package dependencies
+        script: swift package resolve
+      - name: Run domain and sync tests
+        script: swift test --enable-code-coverage
+    artifacts:
+      - .build/**/codecov/**
+
+  ios-screentime-lab:
+    name: FocusGuard Screen Time laboratory
+    environment:
+      ios_signing:
+        distribution_type: development
+        bundle_identifier: com.focusguard.apple
+      xcode: "26.6"
+      vars:
+        XCODE_WORKSPACE: FocusGuardApple.xcodeproj
+        XCODE_SCHEME: FocusGuardMobile
+        BUNDLE_ID: com.focusguard.apple
+    scripts:
+      - name: Resolve Swift package dependencies
+        script: swift package resolve
+      - name: Build and test domain package
+        script: swift test
+      - name: Generate Xcode project
+        script: |
+          command -v xcodegen >/dev/null 2>&1 || brew install xcodegen
+          xcodegen generate --spec project.yml
+      - name: Resolve Xcode project dependencies
+        script: xcodebuild -resolvePackageDependencies -project "$XCODE_WORKSPACE"
+      - name: Configure Codemagic signing profiles
+        script: |
+          test -n "$CM_DEVELOPMENT_TEAM"
+          xcode-project use-profiles --project "$XCODE_WORKSPACE"
+          test -f "$HOME/export_options.plist"
+      # This step remains intentionally gated until registered device profiles
+      # and Family Controls distribution approval exist.
+      - name: Build signed development IPA (entitlement gate)
+        script: |
+          xcodebuild archive \
+            -project "$XCODE_WORKSPACE" \
+            -scheme "$XCODE_SCHEME" \
+            -configuration Debug \
+            -archivePath build/FocusGuard.xcarchive \
+            CODE_SIGN_STYLE=Manual \
+            DEVELOPMENT_TEAM="$CM_DEVELOPMENT_TEAM"
+      - name: Export signed development IPA
+        script: |
+          set -euo pipefail
+          xcodebuild -exportArchive \
+            -archivePath build/FocusGuard.xcarchive \
+            -exportPath build/signed \
+            -exportOptionsPlist "$HOME/export_options.plist"
+          find build/signed -maxdepth 1 -name '*.ipa' -exec cp {} build/FocusGuard-signed.ipa \;
+      - name: Capture effective entitlements and verify signed bundle
+        script: |
+          set -euo pipefail
+          ipa=$(find build/signed -maxdepth 1 -name '*.ipa' -print -quit)
+          test -n "$ipa"
+          mkdir -p build/entitlements/extracted build/entitlements
+          ditto -x -k "$ipa" build/entitlements/extracted
+          app=$(find build/entitlements/extracted/Payload -maxdepth 1 -name '*.app' -print -quit)
+          test -n "$app"
+          codesign --verify --deep --strict "$app"
+          codesign -d --entitlements :- "$app" > build/entitlements/FocusGuardMobile.entitlements.plist 2>/dev/null
+          assert_focus_entitlements() {
+            local entitlements="$1"
+            plutil -p "$entitlements" | grep -q 'com.apple.developer.family-controls'
+            plutil -p "$entitlements" | grep -q 'group.com.focusguard.apple'
+          }
+          assert_focus_entitlements build/entitlements/FocusGuardMobile.entitlements.plist
+          for extension in "$app"/PlugIns/*.appex; do
+            test -d "$extension"
+            name=$(basename "$extension" .appex)
+            codesign --verify --strict "$extension"
+            codesign -d --entitlements :- "$extension" > "build/entitlements/${name}.entitlements.plist" 2>/dev/null
+            assert_focus_entitlements "build/entitlements/${name}.entitlements.plist"
+          done
+    artifacts:
+      - build/**/*.ipa
+      - build/**/*.xcarchive
+      - build/**/*.dSYM.zip
+      - build/**/entitlements.plist
+
+  sideload-lab:
+    name: FocusGuard unsigned IPA laboratory for Sideloadly
+    environment:
+      xcode: "26.6"
+    scripts:
+      - name: Verify Xcode project exists
+        script: |
+          command -v xcodegen >/dev/null 2>&1 || brew install xcodegen
+          xcodegen generate --spec project.yml
+          test -f FocusGuardApple.xcodeproj
+      - name: Resolve dependencies
+        script: xcodebuild -resolvePackageDependencies -project FocusGuardApple.xcodeproj
+      - name: Archive without code signing
+        script: |
+          xcodebuild archive \
+            -project FocusGuardApple.xcodeproj \
+            -scheme FocusGuardMobile \
+            -configuration Debug \
+            -archivePath build/FocusGuard-unsigned.xcarchive \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO
+      - name: Package unsigned IPA for Sideloadly
+        script: |
+          set -euo pipefail
+          app_path=$(find build/FocusGuard-unsigned.xcarchive/Products/Applications -maxdepth 1 -name '*.app' -print -quit)
+          test -n "$app_path"
+          rm -rf build/Payload
+          mkdir -p build/Payload
+          cp -R "$app_path" build/Payload/
+          (cd build && ditto -c -k --sequesterRsrc --keepParent Payload FocusGuard-unsigned.ipa)
+    artifacts:
+      - build/FocusGuard-unsigned.ipa
+      - build/FocusGuard-unsigned.xcarchive
+
+  # Distribution is intentionally not wired until Apple grants Family Controls
+  # distribution entitlement for the app and every Screen Time extension.
+  app-store-placeholder:
+    name: FocusGuard App Store placeholder
+    environment:
+      xcode: "26.6"
+    scripts:
+      - name: Stop until distribution entitlements are approved
+        script: |
+          echo "Family Controls distribution approval is required before release signing."
+          exit 1
