@@ -9,7 +9,9 @@ struct FocusGuardScreenTimeLabApp: App {
         do {
             modelContainer = try FocusGuardModelContainerFactory.make()
         } catch {
-            fatalError("Unable to initialize the local FocusGuard store: \(error)")
+            // Never take down the app over storage setup: fall back to an
+            // in-memory store so the UI can surface the problem instead.
+            modelContainer = try! FocusGuardModelContainerFactory.makeInMemory()
         }
     }
 

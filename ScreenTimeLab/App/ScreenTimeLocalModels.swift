@@ -179,13 +179,38 @@ final class LocalSyncMetadataRecord {
 }
 
 enum FocusGuardModelContainerFactory {
+    /// Builds the local store. The shared app-group container is preferred so the
+    /// Screen Time extensions can read the same database, but sideloaded builds are
+    /// re-signed without that entitlement, so fall back to the app's own container
+    /// instead of failing to launch.
     static func make() throws -> ModelContainer {
+        do {
+            return try makeContainer(groupContainer: .identifier(ScreenTimeLabConstants.appGroup))
+        } catch {
+            return try makeContainer(groupContainer: .none)
+        }
+    }
+
+    static func makeInMemory() throws -> ModelContainer {
+        let schema = Schema(versionedSchema: FocusGuardSchemaV1.self)
+        let configuration = ModelConfiguration(
+            "FocusGuardLocalMemory",
+            schema: schema,
+            isStoredInMemoryOnly: true,
+            cloudKitDatabase: .none
+        )
+        return try ModelContainer(for: schema, configurations: [configuration])
+    }
+
+    private static func makeContainer(
+        groupContainer: ModelConfiguration.GroupContainer
+    ) throws -> ModelContainer {
         let schema = Schema(versionedSchema: FocusGuardSchemaV1.self)
         let configuration = ModelConfiguration(
             "FocusGuardLocal",
             schema: schema,
             isStoredInMemoryOnly: false,
-            groupContainer: .identifier(ScreenTimeLabConstants.appGroup),
+            groupContainer: groupContainer,
             cloudKitDatabase: .none
         )
         return try ModelContainer(
