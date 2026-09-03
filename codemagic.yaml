@@ -45,6 +45,7 @@ workflows:
           xcodebuild archive \
             -project "$XCODE_WORKSPACE" \
             -scheme "$XCODE_SCHEME" \
+            -destination "generic/platform=iOS" \
             -configuration Debug \
             -archivePath build/FocusGuard.xcarchive \
             CODE_SIGN_STYLE=Manual \
@@ -104,6 +105,7 @@ workflows:
           xcodebuild archive \
             -project FocusGuardApple.xcodeproj \
             -scheme FocusGuardMobile \
+            -destination "generic/platform=iOS" \
             -configuration Debug \
             -archivePath build/FocusGuard-unsigned.xcarchive \
             CODE_SIGNING_REQUIRED=NO \
