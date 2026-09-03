@@ -9,7 +9,7 @@
 - repositorio focusguard ios: https://github.com/Estuardo666/focusguard-ios
 - auditoría del repositorio remoto (2026-09-03): `Estuardo666/focusguard-ios` ya contiene la rama `main` y el commit inicial del laboratorio; antes de este push estaba vacío.
 - Fecha de auditoría: 2026-09-03.
-- Última verificación local del slice: 2026-09-03 15:31 -05:00 (Swift 38, backend 22, OpenAPI parseado, Windows 360, preflight Codemagic, YAML/plists/entitlements y scan de secretos verde; `BackendSyncChangeValidator` y `ScreenTimeSyncEngine` parseados).
+- Última verificación local del slice: 2026-09-03 15:33 -05:00 (Swift 38, backend 22, OpenAPI parseado, Windows 360, preflight Codemagic, YAML/plists/entitlements y scan de secretos verde; `BackendSyncChangeValidator` y `ScreenTimeSyncEngine` parseados).
 - Objetivo de compatibilidad inicial Apple: iOS/iPadOS/macOS 26, usando el SDK estable disponible al iniciar el trabajo.
 - Distribución Mac prioritaria: Mac App Store.
 - MVP Apple: sin cuenta y totalmente offline.
@@ -54,6 +54,7 @@ Se ha ejecutado el primer vertical slice fuera de macOS:
 - El remoto Apple se publicó en `main` con commits `02f25cce8bcf307a1c41ba410289d6e40bcffcc2` (laboratorio) y `b088868390dd20dd162768e5e6ce6d6c1597ea65` (CI/destino genérico iOS); el árbol no incluye `.build` ni artefactos de firma.
 - `.github/workflows/ci.yml` añade un gate de GitHub Actions sin firma: ejecuta el preflight, parsea YAML/XML, corre `swift test` en `swift:6.2-jammy` y hace `swiftc -parse` del laboratorio. El build firmado iOS no se duplica allí: Codemagic sigue siendo la CI autorizada para Xcode, provisioning, archive/export y entitlements.
 - La ejecución remota de GitHub Actions `33802362240` (commit `5434b84`) pasó en 1m08s; después de endurecer `checkout` y fijar `generic/platform=iOS`, la ejecución `33802596480` (commit `b088868`) pasó en 58s. Sus pasos confirmaron preflight, YAML/XML, 38 pruebas Swift y parseo de fuentes Apple; no hubo warning de Node.js en la segunda ejecución.
+- La ejecución `33802802116` (commit `9c278e1`, actualización del plan) también pasó en 1m07s con los mismos cuatro gates; el estado remoto de `main` queda verde.
 - El CI de GitHub no puede validar Family Controls, macros SwiftData enlazadas al SDK iOS, XcodeGen/Xcode archive ni firma. Codemagic debe conectarse al repositorio y sus environment groups para ejecutar `ios-screentime-lab`; ese build no se ha ejecutado todavía.
 - Una inspección de patrones de secretos en fuentes candidatas fuera de `.build/bin/obj` no encontró API keys, private keys, client secrets, passwords ni bearer tokens; debe repetirse antes de cada push.
 - El `.gitignore` backend también excluye `appsettings.*.local.json`, `.env` y certificados/keys (`*.pfx`, `*.p12`, `*.pem`, `*.key`); `appsettings.example.json` conserva solo placeholders.
